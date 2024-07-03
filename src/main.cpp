@@ -12,12 +12,32 @@
 #include <Arduino.h>
 #include "Leds/Leds.h"
 #include "config/ConfigInstance.h"
-#include "display/DisplayBuilder.h"
 #include "Reloj/Reloj.h"
 #include "utiles/debug.h"
 #include "Leds/Leds.h"
 #include "display/DisplayTFT.h"
-#include "display/GimpImage.h"
+
+void MostrarInfoInicial()
+{
+    display.clearScreen(TFT_BLACK);
+    display.clearText(TFT_YELLOW, TFT_BLACK);
+    display.print("** TERMINAL SERIE ** Build date: " + String(__DATE__));
+    // display.tft.setTextColor(TFT_WHITE);
+}
+
+void UpdateStatusBar(uint32_t status)
+{
+    if (!display.isOk) return;
+
+    if (status % 4 == 0) display.showGIMPImage(100, 0, &wifi1);
+    if (status % 4 == 1) display.showGIMPImage(100, 0, &wifi2);
+    if (status % 4 == 2) display.showGIMPImage(100, 0, &wifi3);
+    if (status % 4 == 3) display.showGIMPImage(100, 0, &wifi4);
+
+    display.showGIMPImage(180, 0, &celu);
+    display.showGIMPImage(200, 0, &ddbb2);
+    display.showGIMPImage(220, 0, &nowifi);
+}
 
 void setup()
 {
@@ -31,25 +51,21 @@ void setup()
     }
     else
     {
-        DisplayScreenSystemInfo();  // muestra el logo & info, ID, etc...
+        MostrarInfoInicial();  // muestra el logo & info, ID, etc...
     }
     LogI("Init ok. FreeHeap=%u. MaxAllocHeap=%u", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 }
 
-extern const GIMP_image_t *wifi1_image;
+// extern const GIMP_image_t *wifi1_image;
 
 void loop()
 {
     EVERY_N_MILLIS(1000)
     {
         // NextLed(CRGB::Green, false);
-        // GIMPImage g{
-        //     .width  = wifi1_gimp_width,
-        //     .height = wifi1_gimp_width,
-        //     .data   = wifi1_gimp_data,
-        // };
-
-        display.showGIMPImage(1, 1, wifi1_image);
-        
+        static int s = 0;
+        UpdateStatusBar(s++);
+        display.print("linea: g | <>$#....-_____ " + String(s) + " -- " + String(display.cantidadLineasDeLog));
+        if (s >= display.cantidadLineasDeLog) display.clearScreen(TFT_BLACK);
     }
 }
