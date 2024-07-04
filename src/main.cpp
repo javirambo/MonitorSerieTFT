@@ -56,10 +56,42 @@ void setup()
     LogI("Init ok. FreeHeap=%u. MaxAllocHeap=%u", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 }
 
-// extern const GIMP_image_t *wifi1_image;
+void SendToDatabase(const char* buf) {}
+
+#define BUF_LEN 1024
+int idx = 0;
+char buf[BUF_LEN];
 
 void loop()
 {
+    if (Serial.available())
+    {
+        int c = Serial.read();
+        if (c != -1)
+        {
+            if (c == '\n' || c == '\r')
+            {
+                buf[idx] = 0;
+                if (idx > 3)
+                {
+                    display.print(buf);
+                    SendToDatabase(buf);
+                }
+                idx = 0;
+            }
+            else
+            {
+                buf[idx++] = c;
+                if (idx >= (BUF_LEN - 1))
+                {
+                    buf[idx] = 0;
+                    idx      = 0;
+                    display.print(buf);
+                    SendToDatabase(buf);
+                }
+            }
+        }
+    }
     EVERY_N_MILLIS(1000)
     {
         // NextLed(CRGB::Green, false);
