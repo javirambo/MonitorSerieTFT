@@ -624,7 +624,7 @@ void setServer(const String ntp_server /* = NTP_SERVER */) { _ntp_server = ntp_s
 
 static void UpdateFrameLeds()
 {
-    EVERY_N_MILLISECONDS(30) { AllLeds(CRGB::DarkBlue, beatsin8(25, 0, 254)); }
+    EVERY_N_MILLISECONDS(10) { AllLeds(CRGB::Magenta, beatsin8(25, 0, 254)); }
 }
 
 bool waitForSync(const uint16_t timeout /* = 0 */)
@@ -646,7 +646,6 @@ bool waitForSync(const uint16_t timeout /* = 0 */)
                     return false;
                 };
                 ezTimeLoop();
-                // delay(25);
             }
         }
         infoln(F("connected"));

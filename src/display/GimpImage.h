@@ -8,6 +8,7 @@
 #include "iconos/ddbb1.h"
 #include "iconos/nowifi.h"
 #include "iconos/minion.h"
+#include "iconos/clock.h"
 
 typedef struct
 {
@@ -34,3 +35,4 @@ extern GimpImage_t celu_img;
 extern GimpImage_t base_img;
 extern GimpImage_t nowifi_img;
 extern GimpImage_t logo_img;
+extern GimpImage_t clock_img;

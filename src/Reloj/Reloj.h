@@ -21,12 +21,7 @@ class RelojTR
     Timezone LTZ;                 // TODO: ver como vamos a hacer en otros paises
 
     // La hora se actualiza automaticamente cada N segundos.
-    void Init()
-    {
-#if (COMPILE_MASTER == 1)
-        setInterval(PERIODO_ACTUALIZACION_NTP);
-#endif
-    }
+    void Init() { setInterval(3600 * 4); }
 
     // (solo lo usa el Master porque lo pone en hora con el NTP)
     bool Synced() { return timeStatus() == timeSet; }
@@ -34,16 +29,11 @@ class RelojTR
     // este verifica si está en hora para Master o Slave.
     bool EstaEnHora() { return LTZ.now() * 1000LL > HORA_BASE_EFFICAST_MS; }
 
-    // esto lo usa solo el MASTER, porque se pone en hora con un servidor.
     void Sync()
     {
-#if (COMPILE_MASTER == 1)
         waitForSync();  // espera actualizar la hora del NTP (en milisegundos)
         // LTZ.setLocation(F("America/Argentina/Buenos_Aires"));
         Print();  // muestra la hora
-#else
-        LogE("NO DEBERIA USARSE ESTO EN UN SLAVE!!");
-#endif
     }
 
     // esto es para poner en hora el minion (no usa NTP),

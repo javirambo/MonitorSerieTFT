@@ -118,51 +118,14 @@ void Display::print(uint16_t color, String txt)
     {
         tft.setTextColor(colores[i]);
         tft.drawString(logs[i], 0, y, 1);
-        // otra forma
-        // tft.setCursor(0, y);
-        // tft.print(logs[i]);
     }
 }
 
 void Display::showGIMPImage(int x1, int y1, const GimpImage_t *image)
 {
     if (!tftInitialized) return;
-
-    // si la imagen es < a 1/3 de la pantalla, la muestro asi nomas:
-    // if (image->width * image->height * 2 < sizeof(bufferImg))
-    {
-        // int offset;
-        // for (int y = 0; y < image->height; y++)
-        // {
-        //     for (int x = 0; x < image->width; x++)
-        //     {
-        //         offset            = y * image->width + x;
-        //         bufferImg[offset] = image->pixel_data[offset];
-        //     }
-        // }
-        tft.setAddrWindow(x1, y1, image->width, image->height);
-        // tft.pushColors(bufferImg, image->size, true);
-        tft.pushColors(image->pixel_data, image->size, true);
-    }
-
-    // sino la tengo que paginar:
-    // else
-    // {
-    //     int alto = image->height / 3;
-    //     for (int top = 0; top < image->height; top += alto)
-    //     {
-    //         // for (int y = 0; y < alto; y++)
-    //         // {
-    //         //     for (int x = 0; x < image->width; x++)
-    //         //     {
-    //         //         bufferImg[y * image->width + x] = image->pixel_data[(y + top) * image->width + x];
-    //         //     }
-    //         // }
-    //         tft.setAddrWindow(x1, y1 + top, image->width, alto);
-    //         // tft.pushColors(bufferImg, image->width * alto, true);
-    //         tft.pushColors(image->pixel_data + (top * image->width), image->width * alto, true);
-    //     }
-    // }
+    tft.setAddrWindow(x1, y1, image->width, image->height);
+    tft.pushColors(image->pixel_data, image->size, true);
 }
 
 //-- unica instancia para todo el proyecto...

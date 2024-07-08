@@ -14,7 +14,6 @@
 #include "config/ConfigInstance.h"
 #include "Reloj/Reloj.h"
 #include "utiles/debug.h"
-#include "Leds/Leds.h"
 #include "display/DisplayTFT.h"
 #include <WiFi.h>
 #include <SPIFFS.h>
@@ -24,6 +23,9 @@ extern void CaptivePortalStart();
 #define BUF_LEN 1024
 int idx = 0;
 char buf[BUF_LEN];
+
+const char* host = "iot.efficast.ai";
+const int port   = 80;
 
 void ShowWifiIcon()
 {
@@ -39,6 +41,20 @@ void ShowWifiIcon()
         display.showGIMPImage(300, 0, &wifi2_img);
     else
         display.showGIMPImage(300, 0, &wifi1_img);
+}
+
+void PonerEnHora()
+{
+    if (WiFi.status() == WL_CONNECTED && !Reloj.Synced())
+    {
+        LogI("Me pongo en hora...");
+        display.print(TFT_SKYBLUE, "==> Me pongo en hora...");
+        display.showGIMPImage(280, 0, &clock_img);
+        Reloj.Init();
+        Reloj.Sync();  // aca se prenden los leds.
+        display.print(TFT_SKYBLUE, String("==> HORA:  ") + Reloj.ToString());
+        AllLeds(CRGB::Black);
+    }
 }
 
 void setup()
@@ -77,14 +93,50 @@ void setup()
     // inicio wifi:
     WiFi.begin(ConfigInst.WifiSsid, ConfigInst.WifiPass);
     WiFi.onEvent([](WiFiEvent_t event) { display.print(TFT_RED, "==> Wifi desconectado."); }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-    WiFi.onEvent([](WiFiEvent_t event) { display.print(TFT_SKYBLUE, "==> Wifi conectado."); }, ARDUINO_EVENT_WIFI_STA_CONNECTED);
+    WiFi.onEvent(
+        [](WiFiEvent_t event)
+        {
+            display.print(TFT_SKYBLUE, "==> Wifi conectado.");
+            PonerEnHora();
+        },
+        ARDUINO_EVENT_WIFI_STA_GOT_IP);
 }
 
 void SendToDatabase(const char* buf)
 {
-    // display.showGIMPImage(260, 0, &base_img);
     FastLED.setBrightness(50);
+
+    WiFiClient client;
+    if (!client.connect(host, port))
+    {
+        LogE("Error al conectar al servidor php");
+        display.print(TFT_RED, "==> No se pudo conectar a la base!");
+        NextLed(TFT_RED, false);
+        return;
+    }
+
+    display.showGIMPImage(280, 0, &base_img);
     NextLed(TFT_YELLOW, false);
+
+    // ejemplo: "https://iot.efficast.ai/api/logapp/insert.php?ts=2&log=prueba"
+
+    String requestBody = "ts=" + String(Reloj.GetTimeMillis()) + "&log=" + String(buf);
+    client.print(String("GET /api/logapp/insert.php?") + requestBody + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");
+
+#ifdef ESPERAR_RESPUESTA
+    Serial.println("esperando respuesta...");
+    uint32_t T = millis() + 5000;
+    while (client.connected() && T > millis())
+    {
+        String line = client.readStringUntil('\n');
+        if (line == "\r") break;
+    }
+    String response = "";
+    while (client.available()) response += client.readStringUntil('\n');
+    Serial.println(response);
+#endif
+
+    client.stop();
 }
 
 uint16_t AnsiToTftColor(int colorAnsi)
@@ -172,6 +224,8 @@ void loop()
         delay(50);
         digitalWrite(PIN_LED_ALIVE, 0);
         ShowWifiIcon();  //(muestro la potencia del wifi)
+        // quito el icono cada 2 segs (el de la BBDD)
+        display.tft.fillRect(280, 0, base_img.width, base_img.height, TFT_BLACK);
     }
 
     // AVISO PARA QUE SEPAN COMO CAMBIAR LA PASSWORD DEL WIFI:
