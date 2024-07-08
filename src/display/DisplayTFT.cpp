@@ -27,92 +27,109 @@
 #include "utiles/SplitString.h"
 #include <vector>
 
-// de alguna forma tengo que determinar si existe el display...
-bool Display::isWorking()
-{
-    for (int32_t x = 0; x < 20; x++)
-        for (int32_t y = 0; y < 15; y++) tft.fillRect(x * 16, y * 16, 16, 16, tft.color565(random(0xff), random(0xff), random(0xff)));
-    delay(250);
-
-    tft.drawPixel(1, 1, TFT_RED);
-    uint16_t pix = tft.readPixel(1, 1);
-    return tftInitialized && pix == TFT_RED;
-}
-
 // construct only with the background color
-bool Display::begin()
+void Display::init()
 {
-    if (tftInitialized) return isOk;
     tftInitialized = true;
     tft.begin();
     tft.setRotation(1);
     tft.setSwapBytes(true);
     isOk = isWorking();
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextDatum(TL_DATUM);  // Set text datum to Top Left
     clearScreen(TFT_BLACK);
-    return isOk;
+}
+
+// de alguna forma tengo que determinar si existe el display...
+bool Display::isWorking()
+{
+    for (int z = 0; z < 5; z++)
+    {
+        for (int x = 0; x < 20; x++)
+            for (int y = 0; y < 15; y++) tft.fillRect(x * 16, y * 16, 16, 16, tft.color565(random(0xff), random(0xff), random(0xff)));
+        delay(100);
+    }
+    tft.drawPixel(1, 1, TFT_RED);
+    uint16_t pix = tft.readPixel(1, 1);
+    return tftInitialized && pix == TFT_RED;
 }
 
 // borra toda la pantalla (incluida la status bar).
 void Display::clearScreen(uint16_t color)
 {
-    bgColor = color;
-    tft.fillScreen(bgColor);
-    tft.setTextDatum(TL_DATUM);  // Set text datum to Top Left
-}
-
-// borra el area de texto (no el status bar) y setea el color y el font.
-void Display::clearText(uint16_t textcolor, uint16_t bgcolor)
-{
-    yTextPos = 0;
-    // logFont     = (GFXfont *)font;
-    // bgColor   = bgcolor;
-    textColor = textcolor;
-    // tft.fillRect(0, altoStatusBar, tft.width(), tft.height(), bgColor);
-    // tft.setTextDatum(TL_DATUM);
-    // tft.setFreeFont(logFont);
-
-    tft.setTextColor(textColor, bgColor, true);
-    // tft.setTextColor(textColor, bgColor); // ver ......
-
-    // tft.setViewport(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, TL_DATUM);
-    clearScreen(bgcolor);
-}
-
-void Display::clearText() { clearText(textColor, bgColor); }
-
-void Display::print(uint8_t x, uint8_t y, String txt)
-{
-    auto lineas = SplitString(txt, '\n');
-    if (lineas.size() == 1)
+    if (tftInitialized)
     {
-        tft.drawString(txt, x, y, 1);  // no modifico la linea. a no ser que tenga ENTERS.
+        // status bar:
+        tft.fillRect(0, 0, tft.width(), altoStatusBar, TFT_BLACK);
+        // texto:
+        bgColor = color;
+        tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
+
+        logs.clear();
+        colores.clear();
     }
-    else if (lineas.size() > 1)
+}
+
+void Display::print(uint16_t color, String txt)
+{
+    if (tftInitialized)
     {
-        // tiene ENTERS (varias lineas)
-        yTextPos = y;
-        for (int i = 0; i < lineas.size(); i++)
+        //-----------------------------
+        // si la linea tiene mas de 52 caracteres la divido en varias lineas.
+        // (porque no entran mas de 52 en el display)
+        char buf[55];
+        char *s = buf;
+        char *p = (char *)txt.c_str();
+        int l   = 0;
+        while ((*s = *p))
         {
-            tft.drawString(lineas[i], x, yTextPos, 1);
-            // x = 0;  // todas las siguientes lineas comienzan contra el margen 0.
-            yTextPos += altoFont;
+            if (*s == '\t') *s = ' ';
+            s++;
+            p++;
+            l++;
+            if (l >= 52)
+            {
+                *s = 0;
+                logs.push_back(buf);
+                colores.push_back(color);
+                l = 0;
+                s = buf;
+            }
+        }
+        logs.push_back(buf);
+        colores.push_back(color);
+        //-----------------------------
+
+        // y dejo solo las ultimas lineas que puedo mostrar.
+        if (logs.size() > cantidadLineasDeLog)
+        {
+            logs.erase(logs.begin(), logs.begin() + logs.size() - cantidadLineasDeLog);
+            colores.erase(colores.begin(), colores.begin() + colores.size() - cantidadLineasDeLog);
+        }
+
+        // borro toda el area a escribir.
+        tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
+
+        // muestro todas las lineas posibles:
+        int y = altoStatusBar + 1;
+        for (int i = 0; i < logs.size(); i++, y += altoFont)
+        {
+            tft.setTextColor(colores[i]);
+            tft.drawString(logs[i], 0, y, 1);
         }
     }
 }
 
-void Display::print(String txt)
+void Display::showGIMPImage(int x1, int y1, const GimpImage_t *image)
 {
-    print(0, yTextPos, txt);
-    yTextPos += altoFont;  // queda apuntando a la sig linea.
-}
-
-void Display::showGIMPImage(uint8_t x1, uint8_t y1, const GimpImage_t *image)
-{
-    tft.startWrite();
-    for (int y = 0; y < image->height; y++)     //
-        for (int x = 0; x < image->width; x++)  //
-            tft.drawPixel(x + x1, y + y1, image->pixel_data[y * image->width + x]);
-    tft.endWrite();
+    if (tftInitialized)
+    {
+        tft.startWrite();
+        for (int y = 0; y < image->height; y++)     //
+            for (int x = 0; x < image->width; x++)  //
+                tft.drawPixel(x + x1, y + y1, image->pixel_data[y * image->width + x]);
+        tft.endWrite();
+    }
 }
 
 //-- unica instancia para todo el proyecto...

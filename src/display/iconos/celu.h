@@ -1,10 +1,8 @@
 /* GIMP RGB C-Source image dump (celu.c) */
 
-#define GIMP_IMAGE_WIDTH           (18)
-#define GIMP_IMAGE_HEIGHT          (16)
-#define GIMP_IMAGE_BYTES_PER_PIXEL (2) /* 2:RGB16, 3:RGB, 4:RGBA */
-#define GIMP_IMAGE_PIXEL_DATA      ((unsigned char*)GIMP_IMAGE_pixel_data)
-const unsigned char celu_gimp_image_data[18 * 16 * 2 + 1]
+#define CELU_IMAGE_WIDTH  (18)
+#define CELU_IMAGE_HEIGHT (16)
+const unsigned char CELU_IMAGE_DATA[18 * 16 * 2 + 1]
     = ("\000\000\000\000\000\000\000\000,c\276\367\377\377\377\377\377\377\377\377\377\377\377\377"
        "\236\367\313Z\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000U\255\377\377\377\377\377\377"
        "\333\336\333\336\377\377\377\377\377\377\024\245\000\000\000\000\000\000\000\000\000\000\000\000\000"

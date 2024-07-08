@@ -1,10 +1,8 @@
 /* GIMP RGB C-Source image dump (ddbb1.c) */
 
-#define GIMP_IMAGE_WIDTH           (18)
-#define GIMP_IMAGE_HEIGHT          (16)
-#define GIMP_IMAGE_BYTES_PER_PIXEL (2) /* 2:RGB16, 3:RGB, 4:RGBA */
-#define GIMP_IMAGE_PIXEL_DATA      ((unsigned char*)GIMP_IMAGE_pixel_data)
-const unsigned char ddbb1_gimp_image_data[18 * 16 * 2 + 1]
+#define BASE_IMAGE_WIDTH  (18)
+#define BASE_IMAGE_HEIGHT (16)
+const unsigned char BASE_IMAGE_DATA[18 * 16 * 2 + 1]
     = ("\000\000\000\000\000\000\000\000\000\000\323\234\272\326]\357\377\377\377\377]\357\272\326\323"
        "\234\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000IJ<\347\377\377\377\377\377\377\377\377"
        "\377\377\377\377\377\377\377\377<\347(B\000\000\000\000\000\000\000\000\000\000\000\000\070\306\377"

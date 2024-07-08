@@ -32,6 +32,7 @@
 // #include "fonts/Roboto_Thin_14.h"
 // #include "fonts/Free_Fonts.h"
 #include "GimpImage.h"
+#include <vector>
 
 // #define ROB14  &Roboto_Thin_14
 // #define DSEG32 &DSEG7_Classic_Regular_32
@@ -43,37 +44,24 @@ class Display
     bool tftInitialized = false;  // por si no se conecta el display
     uint16_t bgColor    = TFT_BLACK;
     uint16_t textColor  = TFT_WHITE;
-    int32_t yTextPos    = 0;  // ultima linea de log impresa.
+    std::vector<String> logs;
+    std::vector<uint16_t> colores;
 
-    //  TFT_WIDTH  320 x  TFT_HEIGHT 480
+    //  TFT_WIDTH  320 x  TFT_HEIGHT 240
 
    public:
-    const uint8_t altoStatusBar       = 16;
-    const uint8_t altoFont            = 8;
-    const uint8_t cantidadLineasDeLog = 27;  //(TFT_HEIGHT - altoStatusBar) / (altoFont + 2) - 1;  // 29;  // logs que entran en 1 pantalla
+    const int altoStatusBar       = 18;
+    const int altoFont            = 8;
+    const int cantidadLineasDeLog = 27;
 
-    // Use hardware SPI
-    TFT_eSPI tft = TFT_eSPI();
+    TFT_eSPI tft = TFT_eSPI();  // Use hardware SPI
     bool isOk    = false;
 
-    Display() {}
-
-    // de alguna forma tengo que determinar si existe el display...
+    void init();
     bool isWorking();
-
-    // construct only with the background color
-    bool begin();
-
     void clearScreen(uint16_t color);
-
-    void clearText(uint16_t fgcolor, uint16_t bgcolor);
-    void clearText();
-
-    void print(String txt);
-
-    void print(uint8_t x, uint8_t y, String txt);
-
-    void showGIMPImage(uint8_t x, uint8_t y, const GimpImage_t *image);
+    void print(uint16_t color, String txt);
+    void showGIMPImage(int x, int y, const GimpImage_t *image);
 };
 
 //-- unica instancia para todo el proyecto...

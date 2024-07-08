@@ -7,7 +7,7 @@
 // imprime en stdout los codigos del color (ejemplo: "\033[1;m")
 void SetTerminalColor(uint8_t colorFG, uint8_t flags, uint8_t colorBG)
 {
-    String str = "\033[";
+    String str = "\033["; 
     if (colorFG != 0xFF)
     {
         if (flags == 0) str += '0';

@@ -187,19 +187,19 @@ finLeerBoton:
 // Knight Industries Two Thousand
 void LedsKitt()
 {
-    AllLeds(CRGB::Black);
-    for (int i = 0; i < RGB_LEDS_QUANTITY + 2; ++i)
+    for (int i = 0; i < 12; ++i)
     {
         if (i < RGB_LEDS_QUANTITY) leds[i] = CRGB::Red;
-        fadeToBlackBy(leds, RGB_LEDS_QUANTITY, 70);
+        fadeToBlackBy(leds, RGB_LEDS_QUANTITY, 90);
         FastLED.show();
-        FastLED.delay(55);
+        FastLED.delay(15);
     }
-    for (int i = 0; i < RGB_LEDS_QUANTITY * 2; ++i)
+    for (int i = 0; i < 16; ++i)
     {
-        if (i < RGB_LEDS_QUANTITY) leds[RGB_LEDS_QUANTITY - i] = CRGB::Red;
-        fadeToBlackBy(leds, RGB_LEDS_QUANTITY, 70);
+        if (i < RGB_LEDS_QUANTITY) leds[RGB_LEDS_QUANTITY - i - 1] = CRGB::Red;
+        fadeToBlackBy(leds, RGB_LEDS_QUANTITY, 90);
         FastLED.show();
-        FastLED.delay(55);
+        FastLED.delay(15);
     }
+    AllLeds(CRGB::Black);
 }

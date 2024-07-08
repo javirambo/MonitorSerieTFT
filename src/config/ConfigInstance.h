@@ -7,18 +7,21 @@ class ConfigInstance : public ConfigIni
 {
    public:
     const String FileName = "/config.ini";
+    String WifiSsid, WifiPass;
 
     void Load()
     {
-        // WifiSsid           = Get(FileName, "WiSsid");
+        WifiSsid = Get(FileName, "WiSsid");
+        WifiPass = Get(FileName, "WiPass");
     }
 
     void SetWifi(const String& ssid, const String& pass)
     {
-        // Set(FileName, "WiPass", pass);
+        Set(FileName, "WiSsid", ssid);
+        Set(FileName, "WiPass", pass);
+        WifiSsid = ssid;
+        WifiPass = pass;
     }
-
-    // void Print() const { printf("%s\n", ToString().c_str()); }
 };
 
 extern ConfigInstance ConfigInst;

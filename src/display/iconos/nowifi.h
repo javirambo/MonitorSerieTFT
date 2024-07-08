@@ -1,10 +1,8 @@
 /* GIMP RGB C-Source image dump (nowifi.c) */
 
-#define GIMP_IMAGE_WIDTH           (18)
-#define GIMP_IMAGE_HEIGHT          (16)
-#define GIMP_IMAGE_BYTES_PER_PIXEL (2) /* 2:RGB16, 3:RGB, 4:RGBA */
-#define GIMP_IMAGE_PIXEL_DATA      ((unsigned char*)GIMP_IMAGE_pixel_data)
-const unsigned char nowifi_gimp_image_data[18 * 16 * 2 + 1]
+#define NOWIFI_IMAGE_WIDTH  (18)
+#define NOWIFI_IMAGE_HEIGHT (16)
+const unsigned char NOWIFI_IMAGE_DATA[18 * 16 * 2 + 1]
     = ("\000\000\000\350\000\310\000\000\000\000\000\000\000\000$!\256s\256s$!\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
        "\000\000\000\270\040\370\000\300\262\224\232\326\236\367\377\377\377\377\377\377\377"
        "\377\236\367\232\326\222\224\000\000\000\000\000\000\000\000\000\000\000\000\000\300\000\370Q\354\377"
