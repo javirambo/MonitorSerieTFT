@@ -19,25 +19,22 @@
 
 constexpr char TEXT_HTML[]  = "text/html";
 constexpr char TEXT_PLAIN[] = "text/plain";
-const String SELECCIONE_UNA_RED("Seleccione una red WiFi de la lista");
 int wifiCount  = 0;
 bool Finishela = false;
 
 constexpr char WIFI_HTML[] = R"(<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body>
-    <h1>Monitor Serie Wifi Setup</h1>
+<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="text-align: center;">
+    <h1>Monitor Serie</h1>
+    <h2>Wifi Setup</h2>
     <form method='GET' action='ok'>
-        <select class="boton" name="ssid" style="height: 40px;">
+        <select class="boton" name="ssid" style="height: 40px; width: 200px;">
             {OPTIONS}
         </select>
         <br><br>
-        <input class="boton" type='text' placeholder='Ingrese la contrase&ntilde;a' size="20" name='pass' style="height: 40px;"/>
+        <input class="boton" type='text' placeholder='Ingrese la contrase&ntilde;a' size="20" name='pass' style="height: 40px; width: 194px;"/>
         <br><br>
-        <input class="boton bg-ok" type='submit' value='Grabar' style="height: 40px;"/>
+        <input class="boton bg-ok" type='submit' value='Grabar' style="height: 40px; width: 200px;"/>
     </form>
 </body>
 </html>)";
@@ -60,7 +57,7 @@ static void HandleRoot()
 {
     SendCacheHeader();  // los portales cautivos no deben cachear!
 
-    String options = String("<option>") + SELECCIONE_UNA_RED + "</option>";
+    String options = "<option>Seleccione una red WiFi de la lista</option>";
     for (size_t i = 0; i < wifiCount; i++)
     {
         options += String("<option value=\"") + WiFi.SSID(i) + "\">" + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + "dbm)</option>";
@@ -141,6 +138,7 @@ void CaptivePortalStart()
         dnsServer.processNextRequest();
         server.handleClient();
     }
+    display.showGIMPImage(300, 0, &wifi4_img);
     delay(1000);
     Finishela = false;
 }

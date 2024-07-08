@@ -28,7 +28,7 @@ char buf[BUF_LEN];
 void ShowWifiIcon()
 {
     int pot = WiFi.RSSI();
-    //LogW("pot wifi: %d", pot);
+    // LogW("pot wifi: %d", pot);
     if (WiFiClass::status() != WL_CONNECTED)
         display.showGIMPImage(300, 0, &nowifi_img);
     else if (pot > -50)
@@ -61,7 +61,7 @@ void setup()
     display.showGIMPImage(0, 0, &logo_img);
 
     // el boton de DIAG permite setear el WIFI:
-    if (digitalRead(PIN_DIAG_MODE_JUMPER) != 0)
+    if (digitalRead(PIN_DIAG_MODE_JUMPER) == 0)
     {
         CaptivePortalStart();
         esp_restart();
@@ -83,6 +83,8 @@ void setup()
 void SendToDatabase(const char* buf)
 {
     // display.showGIMPImage(260, 0, &base_img);
+    FastLED.setBrightness(50);
+    NextLed(TFT_YELLOW, false);
 }
 
 uint16_t AnsiToTftColor(int colorAnsi)
@@ -113,8 +115,8 @@ void loop()
         // \033[1;30m rojo brillante
         if (estado == 1 && c == '[')
         {
-            estado    = 2;  // esperar la 'm'
-            x         = "";
+            estado = 2;  // esperar la 'm'
+            x      = "";
         }
         else if (estado == 2)
         {
@@ -133,7 +135,7 @@ void loop()
                 x += String(c);
             }
         }
-        else 
+        else
         {
             if (c == '\033')
             {

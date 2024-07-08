@@ -46,6 +46,9 @@ class Display
     uint16_t textColor  = TFT_WHITE;
     std::vector<String> logs;
     std::vector<uint16_t> colores;
+    uint16_t bufferImg[320 * 80];  // buffer (de 1/3 de tamaño de la pantalla)
+
+    void addLinesToLog(uint16_t color, String &txt);
 
     //  TFT_WIDTH  320 x  TFT_HEIGHT 240
 
@@ -60,7 +63,7 @@ class Display
     void init();
     bool isWorking();
     void clearScreen(uint16_t color);
-    void print(uint16_t color, String txt);
+    void print(uint16_t color, String txt);    
     void showGIMPImage(int x, int y, const GimpImage_t *image);
 };
 

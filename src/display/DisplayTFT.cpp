@@ -57,79 +57,112 @@ bool Display::isWorking()
 // borra toda la pantalla (incluida la status bar).
 void Display::clearScreen(uint16_t color)
 {
-    if (tftInitialized)
-    {
-        // status bar:
-        tft.fillRect(0, 0, tft.width(), altoStatusBar, TFT_BLACK);
-        // texto:
-        bgColor = color;
-        tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
+    if (!tftInitialized) return;
 
-        logs.clear();
-        colores.clear();
+    // status bar:
+    tft.fillRect(0, 0, tft.width(), altoStatusBar, TFT_BLACK);
+    // texto:
+    bgColor = color;
+    tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
+
+    logs.clear();
+    colores.clear();
+}
+
+void Display::addLinesToLog(uint16_t color, String &txt)
+{
+    // si la linea tiene mas de 52 caracteres la divido en varias lineas.
+    // (porque no entran mas de 52 en el display)
+    char buf[55];
+    char *s = buf;
+    char *p = (char *)txt.c_str();
+    int l   = 0;
+    while ((*s = *p))
+    {
+        if (*s == '\t') *s = ' ';
+        s++;
+        p++;
+        l++;
+        if (l >= 52)  // corto la linea y la agrego al log.
+        {
+            *s = 0;
+            logs.push_back(buf);
+            colores.push_back(color);
+            l = 0;
+            s = buf;
+        }
     }
+    logs.push_back(buf);  // agrego la ultima (o unica) linea de log.
+    colores.push_back(color);
 }
 
 void Display::print(uint16_t color, String txt)
 {
-    if (tftInitialized)
+    if (!tftInitialized) return;
+
+    addLinesToLog(color, txt);
+
+    // y dejo solo las ultimas lineas que puedo mostrar.
+    if (logs.size() > cantidadLineasDeLog)
     {
-        //-----------------------------
-        // si la linea tiene mas de 52 caracteres la divido en varias lineas.
-        // (porque no entran mas de 52 en el display)
-        char buf[55];
-        char *s = buf;
-        char *p = (char *)txt.c_str();
-        int l   = 0;
-        while ((*s = *p))
-        {
-            if (*s == '\t') *s = ' ';
-            s++;
-            p++;
-            l++;
-            if (l >= 52)
-            {
-                *s = 0;
-                logs.push_back(buf);
-                colores.push_back(color);
-                l = 0;
-                s = buf;
-            }
-        }
-        logs.push_back(buf);
-        colores.push_back(color);
-        //-----------------------------
+        logs.erase(logs.begin(), logs.begin() + logs.size() - cantidadLineasDeLog);
+        colores.erase(colores.begin(), colores.begin() + colores.size() - cantidadLineasDeLog);
+    }
 
-        // y dejo solo las ultimas lineas que puedo mostrar.
-        if (logs.size() > cantidadLineasDeLog)
-        {
-            logs.erase(logs.begin(), logs.begin() + logs.size() - cantidadLineasDeLog);
-            colores.erase(colores.begin(), colores.begin() + colores.size() - cantidadLineasDeLog);
-        }
+    // borro toda el area a escribir.
+    tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
 
-        // borro toda el area a escribir.
-        tft.fillRect(0, altoStatusBar, tft.width(), tft.height() - altoStatusBar, bgColor);
-
-        // muestro todas las lineas posibles:
-        int y = altoStatusBar + 1;
-        for (int i = 0; i < logs.size(); i++, y += altoFont)
-        {
-            tft.setTextColor(colores[i]);
-            tft.drawString(logs[i], 0, y, 1);
-        }
+    // muestro todas las lineas posibles:
+    int y = altoStatusBar + 1;
+    for (int i = 0; i < logs.size(); i++, y += altoFont)
+    {
+        tft.setTextColor(colores[i]);
+        tft.drawString(logs[i], 0, y, 1);
+        // otra forma
+        // tft.setCursor(0, y);
+        // tft.print(logs[i]);
     }
 }
 
 void Display::showGIMPImage(int x1, int y1, const GimpImage_t *image)
 {
-    if (tftInitialized)
+    if (!tftInitialized) return;
+
+    // si la imagen es < a 1/3 de la pantalla, la muestro asi nomas:
+    // if (image->width * image->height * 2 < sizeof(bufferImg))
     {
-        tft.startWrite();
-        for (int y = 0; y < image->height; y++)     //
-            for (int x = 0; x < image->width; x++)  //
-                tft.drawPixel(x + x1, y + y1, image->pixel_data[y * image->width + x]);
-        tft.endWrite();
+        // int offset;
+        // for (int y = 0; y < image->height; y++)
+        // {
+        //     for (int x = 0; x < image->width; x++)
+        //     {
+        //         offset            = y * image->width + x;
+        //         bufferImg[offset] = image->pixel_data[offset];
+        //     }
+        // }
+        tft.setAddrWindow(x1, y1, image->width, image->height);
+        // tft.pushColors(bufferImg, image->size, true);
+        tft.pushColors(image->pixel_data, image->size, true);
     }
+
+    // sino la tengo que paginar:
+    // else
+    // {
+    //     int alto = image->height / 3;
+    //     for (int top = 0; top < image->height; top += alto)
+    //     {
+    //         // for (int y = 0; y < alto; y++)
+    //         // {
+    //         //     for (int x = 0; x < image->width; x++)
+    //         //     {
+    //         //         bufferImg[y * image->width + x] = image->pixel_data[(y + top) * image->width + x];
+    //         //     }
+    //         // }
+    //         tft.setAddrWindow(x1, y1 + top, image->width, alto);
+    //         // tft.pushColors(bufferImg, image->width * alto, true);
+    //         tft.pushColors(image->pixel_data + (top * image->width), image->width * alto, true);
+    //     }
+    // }
 }
 
 //-- unica instancia para todo el proyecto...

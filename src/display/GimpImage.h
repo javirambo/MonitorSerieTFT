@@ -13,6 +13,7 @@ typedef struct
 {
     uint16_t width;
     uint16_t height;
+    uint32_t size;         // ya esta calculado
     uint16_t* pixel_data;  // ojo!! cada pixel es de 16 bits!!
 } GimpImage_t;
 
