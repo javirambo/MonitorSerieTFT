@@ -17,8 +17,11 @@
 #include "display/DisplayTFT.h"
 #include <WiFi.h>
 #include <SPIFFS.h>
+#include "internet/WiFiMulti.h"
 
 extern void CaptivePortalStart();
+
+WiFiMulti wifiMulti;
 
 #define BUF_LEN 1024
 int idx = 0;
@@ -88,18 +91,15 @@ void setup()
     display.clearScreen(TFT_BLACK);
     display.tft.setTextColor(TFT_BLUE);
     display.tft.drawString("* TERMINAL SERIE * Build date: " + String(__DATE__), 8, 3, 1);
-    display.print(TFT_SKYBLUE, "==> Conectando al wifi " + ConfigInst.WifiSsid + "...");
+    display.print(TFT_SKYBLUE, "==> Conectando al wifi ...");
 
     // inicio wifi:
-    WiFi.begin(ConfigInst.WifiSsid, ConfigInst.WifiPass);
-    WiFi.onEvent([](WiFiEvent_t event) { display.print(TFT_RED, "==> Wifi desconectado."); }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-    WiFi.onEvent(
-        [](WiFiEvent_t event)
-        {
-            display.print(TFT_SKYBLUE, "==> Wifi conectado.");
-            PonerEnHora();
-        },
-        ARDUINO_EVENT_WIFI_STA_GOT_IP);
+    WiFi.mode(WIFI_STA);
+    // Add list of wifi networks
+    wifiMulti.addAP("Claaaaaro", "johnwick");
+    wifiMulti.addAP("Inventu Of.", "nosatrevemos");
+    wifiMulti.addAP("InventuTech5ghz", "nosatrevemos");
+    wifiMulti.addAP(ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
 }
 
 void SendToDatabase(const char* buf)
@@ -227,6 +227,28 @@ void loop()
         // quito el icono cada 2 segs (el de la BBDD)
         display.tft.fillRect(280, 0, base_img.width, base_img.height, TFT_BLACK);
     }
+
+    //--------------------------------------------
+    // reintento con otro wifi:
+    static uint8_t statusAnt = -1;
+    uint8_t status           = wifiMulti.run(10000);
+    if (statusAnt != status)
+    {
+        statusAnt = status;
+        if (status != WL_CONNECTED)
+        {
+            display.print(TFT_ORANGE, "No pude conectar al wifi, reintento en segundos.");
+        }
+        else
+        {
+            static char mensaje[150];
+            sprintf(mensaje, "Wifi OK: %s", WiFi.SSID().c_str());
+            display.print(TFT_GREENYELLOW, String(mensaje));
+            sprintf(mensaje, "RSSI %d   IP %s   Channel %d", WiFi.RSSI(), WiFi.localIP().toString().c_str(), WiFi.channel());
+            display.print(TFT_GREENYELLOW, String(mensaje));
+        }
+    }
+    //--------------------------------------------
 
     // AVISO PARA QUE SEPAN COMO CAMBIAR LA PASSWORD DEL WIFI:
     EVERY_N_MINUTES(5)
