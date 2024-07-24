@@ -21,7 +21,11 @@ class RelojTR
     Timezone LTZ;                 // TODO: ver como vamos a hacer en otros paises
 
     // La hora se actualiza automaticamente cada N segundos.
-    void Init() { setInterval(3600 * 4); }
+    void Init()
+    {
+        setInterval(3600 * 4);
+        LTZ.setLocation(F("ar"));
+    }
 
     // (solo lo usa el Master porque lo pone en hora con el NTP)
     bool Synced() { return timeStatus() == timeSet; }
@@ -76,8 +80,16 @@ class RelojTR
     // "15/12/2023 11:31:02.169"
     char* ToString()
     {
-        static char buf[25];
-        sprintf(buf, "%02d/%02d/%04d %02d:%02d:%02d.%03d", LTZ.day(), LTZ.month(), LTZ.year(), LTZ.hour(), LTZ.minute(), LTZ.second(), LTZ.ms());
+        // ejemplo:
+        // https://github.com/ropg/ezTime/blob/master/examples/Timezones/Timezones.ino
+        // country codes for countries that do not span multiple timezones
+        // Timezone myTZ;
+        // LTZ.setLocation(F("ar"));
+        // Serial.print(F("Argentina:         "));
+        // Serial.println(myTZ.dateTime());
+
+        static char buf[55];
+        sprintf(buf, "Argentina: %02d/%02d/%04d %02d:%02d:%02d.%03d", LTZ.day(), LTZ.month(), LTZ.year(), LTZ.hour(), LTZ.minute(), LTZ.second(), LTZ.ms());
         return buf;
     }
 

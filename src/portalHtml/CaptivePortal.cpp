@@ -19,8 +19,8 @@
 
 constexpr char TEXT_HTML[]  = "text/html";
 constexpr char TEXT_PLAIN[] = "text/plain";
-int wifiCount  = 0;
-bool Finishela = false;
+int wifiCount               = 0;
+bool Finishela              = false;
 
 constexpr char WIFI_HTML[] = R"(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -72,22 +72,38 @@ static void HandleRoot()
 static void HandleOk()
 {
     ConfigInst.SetWifi(server.arg("ssid"), server.arg("pass"));
-    LogE("Me apretaron OK en la pagina web. La pass wifi es: %s  %s", ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
     server.send(200, TEXT_PLAIN, "OK");
     Finishela = true;
+
+    char mensaje[100];
+    sprintf(mensaje, "==> Grabando SSID:'%s' PASS:'%s'", ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
+    display.print(TFT_WHITE, String(mensaje));
+    LogE("%s", mensaje);
 }
 
-void CaptivePortalStart()
+void StartHtmlServer()
 {
-    LogE("SE ABRE EL PORTAL DE CONFIGURACION");
+    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsServer.start(53, "*", apIP);
+    server.on("/hotspot-detect.html", HandleRoot);  //  se redirigen al captive portal
+    server.on("/success.html", HandleRoot);         //
+    server.on("/generate_204", HandleRoot);         //
+    server.on("/ncsi.txt", HandleRoot);             //
+    server.on("/fwlink", HandleRoot);               // (Microsoft captive portal)
+    server.on("/", HandleRoot);                     // index o root
+    server.on("/ok", HandleOk);                     // fin
+    server.begin();                                 // Web server start
+}
 
-    WiFi.begin("javiercito", "");
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    delay(100);
+void LoopHtmlServer()
+{
+    dnsServer.processNextRequest();
+    server.handleClient();
+}
 
-    display.showGIMPImage(300, 0, &nowifi_img);
-    AllLeds(CRGB::Black);
+void ScanRedesWifi()
+{
+    display.print(TFT_WHITE, "==> Configurando portal HTML...");
 
     int reintentos = 0;
     do
@@ -109,6 +125,21 @@ void CaptivePortalStart()
             reintentos++;
         }
     } while (reintentos < 5 && wifiCount <= 0);
+}
+
+void CaptivePortalStart()
+{
+    LogE("SE ABRE EL PORTAL DE CONFIGURACION");
+
+    WiFi.begin("javiercito", "");
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    delay(100);
+
+    display.showGIMPImage(300, 0, &nowifi_img);
+    AllLeds(CRGB::Black);
+
+    ScanRedesWifi();
 
     // AP: conexion al access point local para que se conecte un celular:
     String NombreSsid = String("Monitor Serie Setup");
@@ -120,25 +151,12 @@ void CaptivePortalStart()
     delay(500);  // Without delay I've seen the IP address blank
     LogI("Access Point started: %s - IP: %s", NombreSsid.c_str(), WiFi.softAPIP().toString().c_str());
 
-    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
-    dnsServer.start(53, "*", apIP);
-
-    server.on("/hotspot-detect.html", HandleRoot);  //  se redirigen al captive portal
-    server.on("/success.html", HandleRoot);         //
-    server.on("/generate_204", HandleRoot);         //
-    server.on("/ncsi.txt", HandleRoot);             //
-    server.on("/fwlink", HandleRoot);               // (Microsoft captive portal)
-    server.on("/", HandleRoot);                     // index o root
-    server.on("/ok", HandleOk);                     // fin
-    server.begin();                                 // Web server start
-    LogI("HTTP server started at IP: %s", server.client().localIP().toString().c_str());
+    StartHtmlServer();
 
     while (!Finishela)
     {
-        dnsServer.processNextRequest();
-        server.handleClient();
+        LoopHtmlServer();
     }
     display.showGIMPImage(300, 0, &wifi4_img);
     delay(1000);
-    Finishela = false;
 }

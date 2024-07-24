@@ -18,8 +18,7 @@
 #include <WiFi.h>
 #include <SPIFFS.h>
 #include "internet/WiFiMulti.h"
-
-extern void CaptivePortalStart();
+#include "portalHtml/CaptivePortal.h"
 
 WiFiMulti wifiMulti;
 
@@ -84,6 +83,7 @@ void setup()
     {
         CaptivePortalStart();
         esp_restart();
+        // ABORT!!!!!!!
     }
 
     delay(4000);
@@ -96,9 +96,7 @@ void setup()
     // inicio wifi:
     WiFi.mode(WIFI_STA);
     // Add list of wifi networks
-    wifiMulti.addAP("Claaaaaro", "johnwick");
-    wifiMulti.addAP("Inventu Of.", "nosatrevemos");
-    wifiMulti.addAP("InventuTech5ghz", "nosatrevemos");
+
     wifiMulti.addAP(ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
 }
 
@@ -232,20 +230,33 @@ void loop()
     // reintento con otro wifi:
     static uint8_t statusAnt = -1;
     uint8_t status           = wifiMulti.run(10000);
+
     if (statusAnt != status)
     {
         statusAnt = status;
         if (status != WL_CONNECTED)
         {
             display.print(TFT_ORANGE, "No pude conectar al wifi, reintento en segundos.");
+            LogI("Wifi error");
         }
         else
         {
             static char mensaje[150];
-            sprintf(mensaje, "Wifi OK: %s", WiFi.SSID().c_str());
+            sprintf(mensaje, "Wifi OK:%s  RSSI:%d  Channel:%d", WiFi.SSID().c_str(), WiFi.RSSI(), WiFi.channel());
             display.print(TFT_GREENYELLOW, String(mensaje));
-            sprintf(mensaje, "RSSI %d   IP %s   Channel %d", WiFi.RSSI(), WiFi.localIP().toString().c_str(), WiFi.channel());
-            display.print(TFT_GREENYELLOW, String(mensaje));
+            LogI("%s", mensaje);
+
+            static bool once = false;
+            if (!once)
+            {
+                PonerEnHora();
+                ScanRedesWifi();
+                once = true;
+                StartHtmlServer();
+                sprintf(mensaje, "HTTP SERVER AT  %s", WiFi.localIP().toString().c_str());
+                display.print(TFT_GREENYELLOW, String(mensaje));
+                LogI("%s", mensaje);
+            }
         }
     }
     //--------------------------------------------
@@ -272,4 +283,6 @@ void loop()
             }
         }
     }
+
+    LoopHtmlServer();
 }

@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <string.h>
 #include <esp32-hal.h>
+#include "utiles/debug.h"
 
 WiFiMulti::WiFiMulti() {}
 
@@ -54,14 +55,14 @@ bool WiFiMulti::addAP(const char* ssid, const char* passphrase)
     if (!ssid || *ssid == 0x00 || strlen(ssid) > 31)
     {
         // fail SSID too long or missing!
-        log_e("[WIFI][APlistAdd] no ssid or ssid too long");
+        LogE("[WIFI][APlistAdd] no ssid or ssid too long");
         return false;
     }
 
     if (passphrase && strlen(passphrase) > 64)
     {
         // fail passphrase too long!
-        log_e("[WIFI][APlistAdd] passphrase too long");
+        LogE("[WIFI][APlistAdd] passphrase too long");
         return false;
     }
 
@@ -69,7 +70,7 @@ bool WiFiMulti::addAP(const char* ssid, const char* passphrase)
 
     if (!newAP.ssid)
     {
-        log_e("[WIFI][APlistAdd] fail newAP.ssid == 0");
+        LogE("[WIFI][APlistAdd] fail newAP.ssid == 0");
         return false;
     }
 
@@ -78,7 +79,7 @@ bool WiFiMulti::addAP(const char* ssid, const char* passphrase)
         newAP.passphrase = strdup(passphrase);
         if (!newAP.passphrase)
         {
-            log_e("[WIFI][APlistAdd] fail newAP.passphrase == 0");
+            LogE("[WIFI][APlistAdd] fail newAP.passphrase == 0");
             free(newAP.ssid);
             return false;
         }
@@ -89,7 +90,7 @@ bool WiFiMulti::addAP(const char* ssid, const char* passphrase)
     }
 
     APlist.push_back(newAP);
-    log_i("[WIFI][APlistAdd] add SSID: %s", newAP.ssid);
+    LogI("[WIFI][APlistAdd] add SSID: %s", newAP.ssid);
     return true;
 }
 
@@ -125,15 +126,15 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
         uint8_t bestBSSID[6];
         int32_t bestChannel = 0;
 
-        log_i("[WIFI] scan done");
+        LogI("[WIFI] scan done");
 
         if (scanResult == 0)
         {
-            log_e("[WIFI] no networks found");
+            LogE("[WIFI] no networks found");
         }
         else
         {
-            log_i("[WIFI] %d networks found", scanResult);
+            LogI("[WIFI] %d networks found", scanResult);
             for (int8_t i = 0; i < scanResult; ++i)
             {
                 String ssid_scan;
@@ -168,23 +169,23 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
 
                 if (known)
                 {
-                    log_d(" --->   %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
+                    LogD(" --->   %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
                           ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
                 }
                 else
                 {
-                    log_d("       %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
+                    LogD("       %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
                           ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
                 }
             }
         }
 
         // clean up ram
-        WiFi.scanDelete();
+        //WiFi.scanDelete();
 
         if (bestNetwork.ssid)
         {
-            log_i("[WIFI] Connecting BSSID: %02X:%02X:%02X:%02X:%02X:%02X SSID: %s Channel: %d (%d)", bestBSSID[0], bestBSSID[1], bestBSSID[2], bestBSSID[3], bestBSSID[4], bestBSSID[5],
+            LogI("[WIFI] Connecting BSSID: %02X:%02X:%02X:%02X:%02X:%02X SSID: %s Channel: %d (%d)", bestBSSID[0], bestBSSID[1], bestBSSID[2], bestBSSID[3], bestBSSID[4], bestBSSID[5],
                   bestNetwork.ssid, bestChannel, bestNetworkDb);
 
             WiFi.begin(bestNetwork.ssid, bestNetwork.passphrase, bestChannel, bestBSSID);
@@ -195,44 +196,44 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
             while (status != WL_CONNECTED && status != WL_NO_SSID_AVAIL && status != WL_CONNECT_FAILED && (millis() - startTime) <= connectTimeout)
             {
                 status = WiFi.status();
-                // if (callback)
-                //     callback();  // para mostrar progreso en leds y logs...
-                // else
+                if (callback)
+                    callback();  // para mostrar progreso en leds y logs...
+                else
                     delay(20);
             }
 
             switch (status)
             {
                 case WL_CONNECTED:
-                    log_i("[WIFI] Connecting done.");
-                    log_d("[WIFI] SSID: %s", WiFi.SSID().c_str());
-                    log_d("[WIFI] IP: %s", WiFi.localIP().toString().c_str());
-                    log_d("[WIFI] MAC: %s", WiFi.BSSIDstr().c_str());
-                    log_d("[WIFI] Channel: %d", WiFi.channel());
+                    LogI("[WIFI] Connecting done.");
+                    LogI("[WIFI] SSID: %s", WiFi.SSID().c_str());
+                    LogI("[WIFI] IP: %s", WiFi.localIP().toString().c_str());
+                    LogD("[WIFI] MAC: %s", WiFi.BSSIDstr().c_str());
+                    LogD("[WIFI] Channel: %d", WiFi.channel());
                     break;
                 case WL_NO_SSID_AVAIL:
-                    log_e("[WIFI] Connecting Failed AP not found.");
+                    LogE("[WIFI] Connecting Failed AP not found.");
                     break;
                 case WL_CONNECT_FAILED:
-                    log_e("[WIFI] Connecting Failed.");
+                    LogE("[WIFI] Connecting Failed.");
                     break;
                 default:
-                    log_e("[WIFI] Connecting Failed (%d).", status);
+                    LogE("[WIFI] Connecting Failed (%d).", status);
                     break;
             }
         }
         else
         {
-            log_e("[WIFI] no matching wifi found!");
+            LogE("[WIFI] no matching wifi found!");
         }
     }
     else
     {
         // start scan
-        log_d("[WIFI] delete old wifi config...");
+        LogD("[WIFI] delete old wifi config...");
         WiFi.disconnect();
 
-        log_d("[WIFI] start scan");
+        LogD("[WIFI] start scan");
         // scan wifi async mode
         WiFi.scanNetworks(true);
     }
