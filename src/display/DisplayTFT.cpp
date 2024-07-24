@@ -98,6 +98,8 @@ void Display::addLinesToLog(uint16_t color, String &txt)
 
 void Display::print(uint16_t color, String txt)
 {
+    LogI("%s", txt.c_str());
+
     if (!tftInitialized) return;
 
     addLinesToLog(color, txt);

@@ -50,11 +50,11 @@ void PonerEnHora()
     if (WiFi.status() == WL_CONNECTED && !Reloj.Synced())
     {
         LogI("Me pongo en hora...");
-        display.print(TFT_SKYBLUE, "==> Me pongo en hora...");
+        display.print(TFT_SKYBLUE, "Me pongo en hora...");
         display.showGIMPImage(280, 0, &clock_img);
         Reloj.Init();
         Reloj.Sync();  // aca se prenden los leds.
-        display.print(TFT_SKYBLUE, String("==> HORA:  ") + Reloj.ToString());
+        display.print(TFT_SKYBLUE, Reloj.ToString());
         AllLeds(CRGB::Black);
     }
 }
@@ -68,35 +68,24 @@ void setup()
     ConfigInst.Load();
     LedsInit();
     display.init();
-    if (!display.isOk)
-    {
-        LogE("El display parece que no funciona!");
-    }
+    if (!display.isOk) LogE("El display parece que no funciona!");
 
     LogI("Init ok. FreeHeap=%u. MaxAllocHeap=%u", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 
     // muestro el logo inicial:
     display.showGIMPImage(0, 0, &logo_img);
 
-    // el boton de DIAG permite setear el WIFI:
-    if (digitalRead(PIN_DIAG_MODE_JUMPER) == 0)
-    {
-        CaptivePortalStart();
-        esp_restart();
-        // ABORT!!!!!!!
-    }
-
     delay(4000);
     // muestra info, ID, etc...
     display.clearScreen(TFT_BLACK);
     display.tft.setTextColor(TFT_BLUE);
     display.tft.drawString("* TERMINAL SERIE * Build date: " + String(__DATE__), 8, 3, 1);
-    display.print(TFT_SKYBLUE, "==> Conectando al wifi ...");
+    display.print(TFT_SKYBLUE, "Conectando al wifi ...");
 
     // inicio wifi:
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);
     // Add list of wifi networks
-
+    wifiMulti.addAP("example", "example");
     wifiMulti.addAP(ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
 }
 
@@ -108,7 +97,7 @@ void SendToDatabase(const char* buf)
     if (!client.connect(host, port))
     {
         LogE("Error al conectar al servidor php");
-        display.print(TFT_RED, "==> No se pudo conectar a la base!");
+        display.print(TFT_RED, "No se pudo conectar a la base!");
         NextLed(TFT_RED, false);
         return;
     }
@@ -228,58 +217,36 @@ void loop()
 
     //--------------------------------------------
     // reintento con otro wifi:
-    static uint8_t statusAnt = -1;
-    uint8_t status           = wifiMulti.run(10000);
+    uint16_t RetValue = wifiMulti.run(10000);
+    int8_t scanResult = (RetValue >> 8);
+    uint8_t status    = (RetValue & 0xFF);
 
+    static uint8_t statusAnt = -1;
     if (statusAnt != status)
     {
         statusAnt = status;
         if (status != WL_CONNECTED)
         {
             display.print(TFT_ORANGE, "No pude conectar al wifi, reintento en segundos.");
-            LogI("Wifi error");
         }
         else
         {
             static char mensaje[150];
-            sprintf(mensaje, "Wifi OK:%s  RSSI:%d  Channel:%d", WiFi.SSID().c_str(), WiFi.RSSI(), WiFi.channel());
-            display.print(TFT_GREENYELLOW, String(mensaje));
-            LogI("%s", mensaje);
+            sprintf(mensaje, "Wifi:%s, RSSI:%d, Ch:%d", WiFi.SSID().c_str(), WiFi.RSSI(), WiFi.channel());
+            display.print(TFT_SKYBLUE, String(mensaje));
 
             static bool once = false;
             if (!once)
             {
+                once = true;
                 PonerEnHora();
-                ScanRedesWifi();
-                once = true;
-                StartHtmlServer();
-                sprintf(mensaje, "HTTP SERVER AT  %s", WiFi.localIP().toString().c_str());
-                display.print(TFT_GREENYELLOW, String(mensaje));
-                LogI("%s", mensaje);
-            }
-        }
-    }
-    //--------------------------------------------
-
-    // AVISO PARA QUE SEPAN COMO CAMBIAR LA PASSWORD DEL WIFI:
-    EVERY_N_MINUTES(5)
-    {
-        if (WiFiClass::status() != WL_CONNECTED)
-        {
-            LedsKitt();
-            display.print(TFT_RED, "==> No se pudo conectar al wifi " + ConfigInst.WifiSsid);
-            static bool once = false;
-            if (!once)
-            {
-                once = true;
-                display.print(TFT_GREENYELLOW, "============================");
-                display.print(TFT_GREENYELLOW, "Solo veras logs en pantalla,");
-                display.print(TFT_GREENYELLOW, "pero no se grabarán en la base.");
-                display.print(TFT_GREENYELLOW, "CONFIGURACION DEL WIFI:");
-                display.print(TFT_GREENYELLOW, "- Apretá fuerte el botón de DIAG al encenderlo.");
-                display.print(TFT_GREENYELLOW, "- Conectate con un celu al AP.");
-                display.print(TFT_GREENYELLOW, "- El resto ya lo sabes...");
-                display.print(TFT_GREENYELLOW, "============================");
+                String NombreSsid = String("Monitor Serie Setup");
+                CaptivePortalStart(NombreSsid);
+                display.print(TFT_ORANGE, "Podes configurar desde:");
+                display.print(TFT_ORANGE, " > Access Point: " + NombreSsid);
+                display.print(TFT_ORANGE, " > HTTP Server : " + WiFi.localIP().toString());
+                display.print(TFT_ORANGE, "Podes ver los LOGS en:");
+                display.print(TFT_ORANGE, " > https://iot.efficast.ai/api/logapp/");
             }
         }
     }

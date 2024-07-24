@@ -45,7 +45,7 @@ class WiFiMulti
 
     bool addAP(const char* ssid, const char* passphrase = NULL);
 
-    uint8_t run(uint32_t connectTimeout = 5000, WifiMultiCallback_t callback = NULL);
+    uint16_t run(uint32_t connectTimeout = 5000, WifiMultiCallback_t callback = NULL);
 
    private:
     std::vector<WifiAPlist_t> APlist;

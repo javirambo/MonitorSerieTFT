@@ -94,17 +94,17 @@ bool WiFiMulti::addAP(const char* ssid, const char* passphrase)
     return true;
 }
 
-uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
+uint16_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
 {
-    int8_t scanResult;
-    uint8_t status = WiFi.status();
+    int8_t scanResult = 0;
+    uint8_t status    = WiFi.status();
     if (status == WL_CONNECTED)
     {
         for (uint32_t x = 0; x < APlist.size(); x++)
         {
             if (WiFi.SSID() == APlist[x].ssid)
             {
-                return status;
+                return (scanResult << 8) | (status);
             }
         }
         WiFi.disconnect(false, false);
@@ -116,7 +116,7 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
     if (scanResult == WIFI_SCAN_RUNNING)
     {
         // scan is running
-        return WL_NO_SSID_AVAIL;
+        return (scanResult << 8) | WL_NO_SSID_AVAIL;
     }
     else if (scanResult >= 0)
     {
@@ -170,23 +170,23 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
                 if (known)
                 {
                     LogD(" --->   %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
-                          ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
+                         ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
                 }
                 else
                 {
                     LogD("       %d: [%d][%02X:%02X:%02X:%02X:%02X:%02X] %s (%d) %c", i, chan_scan, BSSID_scan[0], BSSID_scan[1], BSSID_scan[2], BSSID_scan[3], BSSID_scan[4], BSSID_scan[5],
-                          ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
+                         ssid_scan.c_str(), rssi_scan, (sec_scan == WIFI_AUTH_OPEN) ? ' ' : '*');
                 }
             }
         }
 
         // clean up ram
-        //WiFi.scanDelete();
+        // WiFi.scanDelete();
 
         if (bestNetwork.ssid)
         {
             LogI("[WIFI] Connecting BSSID: %02X:%02X:%02X:%02X:%02X:%02X SSID: %s Channel: %d (%d)", bestBSSID[0], bestBSSID[1], bestBSSID[2], bestBSSID[3], bestBSSID[4], bestBSSID[5],
-                  bestNetwork.ssid, bestChannel, bestNetworkDb);
+                 bestNetwork.ssid, bestChannel, bestNetworkDb);
 
             WiFi.begin(bestNetwork.ssid, bestNetwork.passphrase, bestChannel, bestBSSID);
             status = WiFi.status();
@@ -238,5 +238,5 @@ uint8_t WiFiMulti::run(uint32_t connectTimeout, WifiMultiCallback_t callback)
         WiFi.scanNetworks(true);
     }
 
-    return status;
+    return (scanResult << 8) | (status);
 }

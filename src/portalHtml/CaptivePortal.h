@@ -1,7 +1,5 @@
 #pragma once
 #include <Arduino.h>
 
-void CaptivePortalStart();
-void StartHtmlServer();
+void CaptivePortalStart(String NombreSsid);
 void LoopHtmlServer();
-void ScanRedesWifi();

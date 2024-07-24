@@ -19,10 +19,7 @@
 
 constexpr char TEXT_HTML[]  = "text/html";
 constexpr char TEXT_PLAIN[] = "text/plain";
-int wifiCount               = 0;
-bool Finishela              = false;
-
-constexpr char WIFI_HTML[] = R"(<!DOCTYPE html>
+constexpr char WIFI_HTML[]  = R"(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="text-align: center;">
     <h1>Monitor Serie</h1>
@@ -58,9 +55,18 @@ static void HandleRoot()
     SendCacheHeader();  // los portales cautivos no deben cachear!
 
     String options = "<option>Seleccione una red WiFi de la lista</option>";
-    for (size_t i = 0; i < wifiCount; i++)
+    size_t i;
+    for (i = 0; i < 20; i++)
     {
-        options += String("<option value=\"") + WiFi.SSID(i) + "\">" + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + "dbm)</option>";
+        String ssid = WiFi.SSID(i);
+        if (ssid.isEmpty()) break;
+        options += String("<option value=\"") + ssid + "\">" + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + "dbm)</option>";
+    }
+    if (i == 0)
+    {  // no hay redes. lanzo async para mas tarde ver si tengo algo...
+        WiFi.disconnect();
+        WiFi.scanNetworks(true);
+        return;
     }
     String html = WIFI_HTML;
     html.replace("{OPTIONS}", options);
@@ -73,16 +79,20 @@ static void HandleOk()
 {
     ConfigInst.SetWifi(server.arg("ssid"), server.arg("pass"));
     server.send(200, TEXT_PLAIN, "OK");
-    Finishela = true;
-
-    char mensaje[100];
-    sprintf(mensaje, "==> Grabando SSID:'%s' PASS:'%s'", ConfigInst.WifiSsid.c_str(), ConfigInst.WifiPass.c_str());
-    display.print(TFT_WHITE, String(mensaje));
-    LogE("%s", mensaje);
+    display.print(TFT_ORANGE, "Grabando SSID:'" + ConfigInst.WifiSsid + "' PASS:'" + ConfigInst.WifiPass + "'");
 }
 
-void StartHtmlServer()
+void LoopHtmlServer()
 {
+    dnsServer.processNextRequest();
+    server.handleClient();
+}
+
+void CaptivePortalStart(String NombreSsid)
+{
+    // AP: conexion al access point local para que se conecte un celular:
+    WiFi.softAPConfig(apIP, apIP, netMsk);
+    WiFi.softAP(NombreSsid.c_str(), "");  // sin contraseña
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", apIP);
     server.on("/hotspot-detect.html", HandleRoot);  //  se redirigen al captive portal
@@ -93,70 +103,4 @@ void StartHtmlServer()
     server.on("/", HandleRoot);                     // index o root
     server.on("/ok", HandleOk);                     // fin
     server.begin();                                 // Web server start
-}
-
-void LoopHtmlServer()
-{
-    dnsServer.processNextRequest();
-    server.handleClient();
-}
-
-void ScanRedesWifi()
-{
-    display.print(TFT_WHITE, "==> Configurando portal HTML...");
-
-    int reintentos = 0;
-    do
-    {
-        LogI("Buscando redes wifi...");
-        WiFi.scanNetworks(true, true, false, 777);  // ojo que menos de 600 da error porque no alcanza a revisar las redes...
-        do
-        {
-            wifiCount = WiFi.scanComplete();
-        } while (wifiCount == WIFI_SCAN_RUNNING);
-        LogI("Encontradas %d redes wifi", wifiCount < 0 ? 0 : wifiCount);
-
-        if (wifiCount < 0)
-        {
-            AllLeds(CRGB::Red);
-            LogE("FALLO AL BUSCAR REDES WIFI. REINTENTO...");
-            delay(2000);
-            AllLeds(CRGB::Black);
-            reintentos++;
-        }
-    } while (reintentos < 5 && wifiCount <= 0);
-}
-
-void CaptivePortalStart()
-{
-    LogE("SE ABRE EL PORTAL DE CONFIGURACION");
-
-    WiFi.begin("javiercito", "");
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    delay(100);
-
-    display.showGIMPImage(300, 0, &nowifi_img);
-    AllLeds(CRGB::Black);
-
-    ScanRedesWifi();
-
-    // AP: conexion al access point local para que se conecte un celular:
-    String NombreSsid = String("Monitor Serie Setup");
-    WiFi.softAPConfig(apIP, apIP, netMsk);
-    WiFi.softAP(NombreSsid.c_str(), "");  // sin contraseña
-
-    display.showGIMPImage(300, 0, &wifi4_img);
-
-    delay(500);  // Without delay I've seen the IP address blank
-    LogI("Access Point started: %s - IP: %s", NombreSsid.c_str(), WiFi.softAPIP().toString().c_str());
-
-    StartHtmlServer();
-
-    while (!Finishela)
-    {
-        LoopHtmlServer();
-    }
-    display.showGIMPImage(300, 0, &wifi4_img);
-    delay(1000);
 }
